@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Study Hub | Login</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body class="auth-page">
+    <header class="landing-header">
+      <a class="landing-brand" href="/" aria-label="AI Study Hub home">
+        <span class="landing-brand-name">AI STUDY HUB<span>.</span></span>
+        <span class="landing-brand-caption">YOUR ONE-TO-ONE AI STUDY PARTNER</span>
+      </a>
+      <nav class="landing-nav" aria-label="Main navigation">
+        <a href="#study-features">STUDY TOOLS</a>
+        <a href="#loginForm">HOW IT WORKS</a>
+        <button class="header-cta" type="button" data-auth-mode="register">
+          GET STARTED <span aria-hidden="true">↗</span>
+        </button>
+      </nav>
+    </header>
+
+    <div class="page-shell">
+      <div class="auth-background"></div>
+
+      <main class="auth-card">
+        <div class="welcome-panel">
+          <div class="hero-copy">
+            <p class="hero-kicker"><span></span> PERSONALIZED LEARNING, ONLINE</p>
+            <h1>LESS DOUBT.<br /><span>MORE CONFIDENCE.</span></h1>
+            <p class="hero-description">
+              A clearer path through every subject, with helpful AI support
+              whenever you need it.
+            </p>
+            <div class="hero-proof" id="study-features">
+              <span>01 <b>Study roadmaps</b></span>
+              <span>02 <b>AI notes</b></span>
+              <span>03 <b>Study chat</b></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-panel">
+          <div class="toggle-row">
+            <button class="toggle-btn active" data-auth-mode="login">Login</button>
+            <button class="toggle-btn" data-auth-mode="register">Register</button>
+          </div>
+
+          <form id="loginForm" class="auth-form active">
+            <p class="form-eyebrow">WELCOME BACK</p>
+            <h2>Welcome back</h2>
+            <p class="form-intro">Sign in to pick up where you left off.</p>
+            <div class="input-group">
+              <label for="loginEmail">Email</label>
+              <input id="loginEmail" name="email" type="email" placeholder="you@example.com" required />
+            </div>
+            <div class="input-group">
+              <label for="loginPassword">Password</label>
+              <input id="loginPassword" name="password" type="password" placeholder="••••••••" required />
+            </div>
+
+            <div class="forgot-password-row">
+              <button type="button" id="forgotPasswordLink" class="text-link">Forgot Password?</button>
+            </div>
+
+            <button type="submit" class="primary-btn">Sign In</button>
+          </form>
+
+          <form id="registerForm" class="auth-form">
+            <p class="form-eyebrow">YOUR NEXT CHAPTER</p>
+            <h2>Create account</h2>
+            <p class="form-intro">Create your free account and start learning with clarity.</p>
+            <div class="input-group">
+              <label for="registerName">Full Name</label>
+              <input id="registerName" name="full_name" type="text" placeholder="John Doe" required />
+            </div>
+            <div class="input-group">
+              <label for="registerEmail">Email</label>
+              <input id="registerEmail" name="email" type="email" placeholder="you@example.com" required />
+            </div>
+            <div class="input-group">
+              <label for="registerPassword">Password</label>
+              <input id="registerPassword" name="password" type="password" placeholder="Minimum 8 characters" required />
+            </div>
+            <div class="input-group">
+              <label for="confirmPassword">Confirm Password</label>
+              <input id="confirmPassword" type="password" placeholder="Re-type password" required />
+            </div>
+            <button type="submit" class="primary-btn">Create Account</button>
+          </form>
+        </div>
+      </main>
+    </div>
+
+    <div id="onboardingModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Choose your education stream</h3>
+        </div>
+        <div class="input-group">
+          <label for="educationStream">Education Stream</label>
+          <select id="educationStream">
+            <option value="Software Engineering">Software Engineering</option>
+            <option value="Data Science">Data Science</option>
+            <option value="Mechanical">Mechanical</option>
+            <option value="Electronics">Electronics</option>
+          </select>
+        </div>
+        <button id="saveEducation" class="primary-btn full-width">Continue</button>
+      </div>
+    </div>
+
+    <div id="forgotPasswordModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Reset your password</h3>
+        </div>
+        <form id="forgotPasswordForm">
+          <div class="input-group">
+            <label for="resetEmail">Email Address</label>
+            <input id="resetEmail" type="email" placeholder="you@example.com" required />
+          </div>
+          <button type="submit" class="primary-btn full-width">Send Reset Link</button>
+        </form>
+        <div id="forgotPasswordMessage" class="flash-message hidden"></div>
+      </div>
+    </div>
+
+    <script src="./js/api.js"></script>
+    <script src="./js/layout.js"></script>
+    <script>
+      const authModeButtons = document.querySelectorAll("[data-auth-mode]");
+      const loginForm = document.getElementById("loginForm");
+      const registerForm = document.getElementById("registerForm");
+      const onboardingModal = document.getElementById("onboardingModal");
+      const forgotPasswordModal = document.getElementById("forgotPasswordModal");
+      const forgotPasswordLink = document.getElementById("forgotPasswordLink");
+      const forgotPasswordForm = document.getElementById("forgotPasswordForm");
+      const forgotPasswordMessage = document.getElementById("forgotPasswordMessage");
+
+      authModeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const mode = button.dataset.authMode;
+          authModeButtons.forEach((btn) => btn.classList.toggle("active", btn === button));
+          loginForm.classList.toggle("active", mode === "login");
+          registerForm.classList.toggle("active", mode === "register");
+        });
+      });
+
+      forgotPasswordLink.addEventListener("click", () => {
+        forgotPasswordModal.classList.remove("hidden");
+      });
+
+      forgotPasswordForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const email = document.getElementById("resetEmail").value.trim();
+
+        try {
+          const response = await studyHubAPI.forgotPassword({ email });
+          forgotPasswordMessage.textContent = response.message;
+          forgotPasswordMessage.classList.remove("hidden");
+          forgotPasswordMessage.classList.add("success");
+          forgotPasswordForm.reset();
+        } catch (error) {
+          forgotPasswordMessage.textContent = error.message;
+          forgotPasswordMessage.classList.remove("hidden");
+          forgotPasswordMessage.classList.add("error");
+        }
+      });
+
+      document.addEventListener("click", (event) => {
+        if (event.target === forgotPasswordModal) {
+          forgotPasswordModal.classList.add("hidden");
+        }
+        if (event.target === onboardingModal) {
+          onboardingModal.classList.add("hidden");
+        }
+      });
+
+      loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const payload = {
+          email: document.getElementById("loginEmail").value,
+          password: document.getElementById("loginPassword").value
+        };
+
+        try {
+          const response = await studyHubAPI.login(payload);
+          if (response.user.is_onboarded) {
+            window.location.href = "dashboard.html";
+            return;
+          }
+          onboardingModal.classList.remove("hidden");
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+      registerForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const password = document.getElementById("registerPassword").value;
+        const confirm = document.getElementById("confirmPassword").value;
+
+        if (password !== confirm) {
+          alert("Passwords do not match.");
+          return;
+        }
+
+        const payload = {
+          full_name: document.getElementById("registerName").value,
+          email: document.getElementById("registerEmail").value,
+          password
+        };
+
+        try {
+          await studyHubAPI.register(payload);
+          onboardingModal.classList.remove("hidden");
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+      document.getElementById("saveEducation").addEventListener("click", async () => {
+        const stream = document.getElementById("educationStream").value;
+        try {
+          await studyHubAPI.saveOnboarding({ education_stream: stream });
+          onboardingModal.classList.add("hidden");
+          window.location.href = "dashboard.html";
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+    </script>
+  </body>
+</html>

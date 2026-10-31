@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Study Hub | Reset Password</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body class="auth-page">
+    <div class="page-shell">
+      <div class="auth-background"></div>
+
+      <main class="auth-card">
+        <div class="welcome-panel">
+          <div class="brand">
+            <span class="brand-badge">AI</span>
+            <span class="brand-text">AI Study Hub</span>
+          </div>
+
+          <h1>Reset your password</h1>
+          <p>Create a new secure password for your account.</p>
+        </div>
+
+        <div class="form-panel">
+          <form id="resetPasswordForm">
+            <h2>New Password</h2>
+
+            <div class="input-group">
+              <label for="newPassword">New Password</label>
+              <input id="newPassword" type="password" placeholder="Minimum 8 characters" required />
+            </div>
+
+            <div class="input-group">
+              <label for="confirmNewPassword">Confirm Password</label>
+              <input id="confirmNewPassword" type="password" placeholder="Re-enter password" required />
+            </div>
+
+            <button type="submit" class="primary-btn">Update Password</button>
+          </form>
+
+          <div id="resetMessage" class="flash-message hidden"></div>
+        </div>
+      </main>
+    </div>
+
+    <script src="./js/api.js"></script>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get("token");
+
+      const form = document.getElementById("resetPasswordForm");
+      const messageBox = document.getElementById("resetMessage");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const password = document.getElementById("newPassword").value;
+        const confirm = document.getElementById("confirmNewPassword").value;
+
+        if (!token) {
+          messageBox.textContent = "Invalid reset link.";
+          messageBox.classList.remove("hidden");
+          messageBox.classList.add("error");
+          return;
+        }
+
+        if (password !== confirm) {
+          messageBox.textContent = "Passwords do not match.";
+          messageBox.classList.remove("hidden");
+          messageBox.classList.add("error");
+          return;
+        }
+
+        try {
+          const response = await studyHubAPI.resetPassword({
+            token,
+            new_password: password
+          });
+
+          messageBox.textContent = response.message;
+          messageBox.classList.remove("hidden");
+          messageBox.classList.add("success");
+
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 2000);
+        } catch (error) {
+          messageBox.textContent = error.message;
+          messageBox.classList.remove("hidden");
+          messageBox.classList.add("error");
+        }
+      });
+    </script>
+  </body>
+</html>

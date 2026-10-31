@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Study Hub | Dashboard</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body data-page="dashboard">
+    <div data-nav></div>
+
+    <main class="dashboard-container">
+      <section class="page-header">
+        <div>
+          <p class="eyebrow">Study Overview</p>
+          <h1 id="pageTitle">Welcome back</h1>
+        </div>
+
+        <button id="logoutBtn" class="secondary-btn">Logout</button>
+      </section>
+
+      <section class="info-strip">
+        <div class="info-card">
+          <span class="small-label">Education Stream</span>
+          <h3 id="streamLabel">Software Engineering</h3>
+        </div>
+        <div class="info-card">
+          <span class="small-label">Learning Focus</span>
+          <h3>Roadmaps and AI support</h3>
+        </div>
+        <div class="info-card">
+          <span class="small-label">Next Goal</span>
+          <h3>Master your current subject</h3>
+        </div>
+      </section>
+
+      <section class="section-title-row">
+        <h2>Recommended Subjects</h2>
+      </section>
+
+      <div id="subjectGrid" class="subject-grid"></div>
+    </main>
+
+    <script src="./js/api.js"></script>
+    <script src="./js/layout.js"></script>
+    <script>
+      async function loadDashboard() {
+        try {
+          const data = await studyHubAPI.getDashboard();
+          const user = data.user;
+          const subjects = data.subjects;
+
+          document.getElementById("pageTitle").textContent = `Hello, ${user.full_name.split(" ")[0]}`;
+          document.getElementById("streamLabel").textContent = user.education_stream;
+
+          const grid = document.getElementById("subjectGrid");
+          grid.innerHTML = "";
+
+          if (!subjects.length) {
+            grid.innerHTML = `<div class="empty-state">No subjects were found for your stream yet.</div>`;
+            return;
+          }
+
+          subjects.forEach((subject) => {
+            const card = document.createElement("article");
+            card.className = "subject-card";
+            card.innerHTML = `
+              <div class="subject-top">
+                <div class="subject-icon">${subject.icon || "📚"}</div>
+                <span class="subject-tag">${subject.stream}</span>
+              </div>
+              <h3>${subject.name}</h3>
+              <p>${subject.description}</p>
+              <div class="subject-footer">
+                <span>${(subject.roadmap || []).length} steps</span>
+                <button class="small-btn" data-subject-id="${subject.id}">Open</button>
+              </div>
+            `;
+
+            card.querySelector("button").addEventListener("click", () => {
+              window.location.href = `note.html?id=${subject.id}`;
+            });
+
+            grid.appendChild(card);
+          });
+        } catch (error) {
+          alert(error.message || "Unable to load dashboard.");
+          window.location.href = "index.html";
+        }
+      }
+
+      document.getElementById("logoutBtn").addEventListener("click", async () => {
+        try {
+          await studyHubAPI.logout();
+        } catch (error) {
+          console.error(error);
+        }
+        window.location.href = "index.html";
+      });
+
+      loadDashboard();
+      renderNavbar("dashboard");
+    </script>
+  </body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1a3555" />
+    <title>Subject roadmap | AI Study Hub</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body data-page="note">
+    <div data-nav></div>
+
+    <main class="note-page">
+      <a class="back-link" href="dashboard.html">← Back to subjects</a>
+      <section class="subject-hero">
+        <div class="hero-text">
+          <p class="eyebrow">YOUR LEARNING PATH</p>
+          <h1 id="subjectTitle">Loading subject…</h1>
+          <p id="subjectDescription" class="subject-description"></p>
+        </div>
+        <div class="subject-hero-actions">
+          <span id="subjectStream" class="hero-meta"></span>
+          <a class="primary-btn subject-cta" href="generate.html">Study with AI <span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
+
+      <section class="roadmap-section">
+        <div class="section-title-row">
+          <div>
+            <p class="eyebrow">STEP BY STEP</p>
+            <h2>Subject roadmap</h2>
+          </div>
+        </div>
+        <div id="roadmapList" class="roadmap-list"></div>
+      </section>
+
+      <section class="resources-section">
+        <div class="section-title-row">
+          <div>
+            <p class="eyebrow">GO A LITTLE DEEPER</p>
+            <h2>Recommended resources</h2>
+          </div>
+        </div>
+        <div id="resourceList" class="resource-list"></div>
+      </section>
+    </main>
+
+    <script src="./js/api.js"></script>
+    <script src="./js/layout.js"></script>
+    <script>
+      function addTextElement(parent, tagName, className, text) {
+        const element = document.createElement(tagName);
+        if (className) element.className = className;
+        element.textContent = text || "";
+        parent.appendChild(element);
+        return element;
+      }
+
+      function renderRoadmap(roadmap) {
+        const list = document.getElementById("roadmapList");
+        list.replaceChildren();
+
+        if (!roadmap.length) {
+          addTextElement(list, "p", "empty-state", "A roadmap for this subject is coming soon.");
+          return;
+        }
+
+        roadmap.forEach((step, index) => {
+          const item = document.createElement("article");
+          item.className = "roadmap-item";
+          addTextElement(item, "span", "step-badge", String(index + 1).padStart(2, "0"));
+          addTextElement(item, "p", "step-copy", step);
+          list.appendChild(item);
+        });
+      }
+
+      function renderResources(resources) {
+        const list = document.getElementById("resourceList");
+        list.replaceChildren();
+
+        if (!resources.length) {
+          addTextElement(list, "p", "empty-state", "Recommended resources will appear here soon.");
+          return;
+        }
+
+        resources.forEach((resource) => {
+          const card = document.createElement("article");
+          card.className = "resource-card";
+          const header = document.createElement("div");
+          header.className = "resource-header";
+          addTextElement(header, "h3", "", resource.topic || "Study resource");
+          addTextElement(header, "span", "resource-pill", "RESOURCE");
+          card.appendChild(header);
+          addTextElement(card, "p", "", resource.notes || "");
+
+          if (Array.isArray(resource.books) && resource.books.length) {
+            addTextElement(card, "span", "meta-label", "Suggested reading");
+            const books = document.createElement("ul");
+            books.className = "book-list";
+            resource.books.forEach((book) => addTextElement(books, "li", "", book));
+            card.appendChild(books);
+          }
+
+          if (resource.youtube_url) {
+            const video = document.createElement("div");
+            video.className = "video-block";
+            const link = document.createElement("a");
+            link.href = resource.youtube_url;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.textContent = resource.tutorial_title || "Watch tutorial";
+            video.appendChild(link);
+            card.appendChild(video);
+          }
+
+          list.appendChild(card);
+        });
+      }
+
+      async function loadSubject() {
+        const subjectId = new URLSearchParams(window.location.search).get("id");
+        if (!subjectId) {
+          document.getElementById("subjectTitle").textContent = "Subject not selected";
+          document.getElementById("subjectDescription").textContent = "Return to your dashboard and choose a subject to view its roadmap.";
+          return;
+        }
+
+        try {
+          const data = await studyHubAPI.getSubject(subjectId);
+          const subject = data.subject;
+          document.title = `${subject.name} | AI Study Hub`;
+          document.getElementById("subjectTitle").textContent = subject.name;
+          document.getElementById("subjectDescription").textContent = subject.description || "";
+          document.getElementById("subjectStream").textContent = subject.stream || "Study subject";
+          renderRoadmap(Array.isArray(subject.roadmap) ? subject.roadmap : []);
+          renderResources(Array.isArray(data.resources) ? data.resources : []);
+        } catch (error) {
+          document.getElementById("subjectTitle").textContent = "Unable to load subject";
+          document.getElementById("subjectDescription").textContent = error.message || "Please return to your dashboard and try again.";
+        }
+      }
+
+      renderNavbar("note");
+      loadSubject();
+    </script>
+  </body>
+</html>

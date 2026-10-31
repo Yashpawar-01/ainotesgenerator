@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Study Hub | Generate Notes</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body data-page="generate">
+    <div data-nav></div>
+
+    <main class="generate-layout">
+      <aside class="chat-sidebar">
+        <div class="sidebar-header">
+          <h3>Study Chat</h3>
+          <button id="newChatBtn" class="small-btn">New chat</button>
+        </div>
+        <div id="chatSessionList" class="session-list"></div>
+      </aside>
+
+      <section class="generator-panel">
+        <div class="notes-form-panel">
+          <h2>Generate AI Notes</h2>
+
+          <form id="notesForm">
+            <div class="input-group">
+              <label for="notesTopic">Topic or Chapter</label>
+              <input id="notesTopic" type="text" placeholder="e.g. Binary Trees" required />
+            </div>
+            <button type="submit" class="primary-btn">Generate notes</button>
+          </form>
+
+          <div id="notesOutput" class="notes-output">
+            <p class="muted-text">Your generated study notes will appear here.</p>
+          </div>
+
+          <div id="notesExportActions" class="notes-export-actions hidden">
+            <button id="exportDocxBtn" class="secondary-btn">Export DOCX</button>
+            <button id="exportPdfBtn" class="secondary-btn">Export PDF</button>
+          </div>
+        </div>
+
+        <div class="chat-panel">
+          <div id="chatMessages" class="chat-messages">
+            <div class="chat-bubble bot">
+              Hello! Ask me about any concept, code issue, or chapter summary.
+            </div>
+          </div>
+
+          <form id="chatForm" class="chat-form">
+            <input id="chatInput" type="text" placeholder="Ask a study question..." />
+            <button type="submit" class="primary-btn">Send</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <script src="./js/api.js"></script>
+    <script src="./js/layout.js"></script>
+    <script>
+      let activeChatSessionId = null;
+      let generatedNotes = null;
+
+      function appendChatBubble(container, role, content) {
+        const bubble = document.createElement("div");
+        bubble.className = `chat-bubble ${role}`;
+        bubble.textContent = String(content || "");
+        container.appendChild(bubble);
+      }
+
+      async function loadSessions() {
+        try {
+          const data = await studyHubAPI.getChatSessions();
+          const list = document.getElementById("chatSessionList");
+          list.innerHTML = "";
+
+          if (!data.sessions.length) {
+            list.innerHTML = `<div class="empty-state small">No chat history yet.</div>`;
+            return;
+          }
+
+          data.sessions.forEach((session) => {
+            const item = document.createElement("button");
+            item.type = "button";
+            item.className = "session-item";
+            item.textContent = session.title || "Untitled Chat";
+            item.addEventListener("click", async () => {
+              activeChatSessionId = session.id;
+              await loadChatMessages(session.id);
+            });
+            list.appendChild(item);
+          });
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      async function loadChatMessages(sessionId) {
+        try {
+          const data = await studyHubAPI.getChatMessages(sessionId);
+          const chatMessages = document.getElementById("chatMessages");
+          chatMessages.innerHTML = "";
+
+          if (!data.messages.length) {
+            chatMessages.innerHTML = `<div class="chat-bubble bot">Ask me anything related to your academic work.</div>`;
+            return;
+          }
+
+          data.messages.forEach((message) => {
+            appendChatBubble(chatMessages, message.role === "user" ? "user" : "bot", message.content);
+          });
+
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      document.getElementById("notesForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const topic = document.getElementById("notesTopic").value.trim();
+        if (!topic) return;
+
+        try {
+          const data = await studyHubAPI.generateNotes({ topic });
+          generatedNotes = data.notes;
+
+          document.getElementById("notesOutput").innerHTML = `
+            <div class="note-card">
+              <h3>${generatedNotes.title}</h3>
+              <p>${generatedNotes.summary}</p>
+
+              <div class="concept-list">
+                ${generatedNotes.key_concepts.map((item) => `<li>${item}</li>`).join("")}
+              </div>
+
+              <div class="study-plan">
+                <h4>Study Plan</h4>
+                <ol>
+                  ${generatedNotes.study_plan.map((step) => `<li>${step}</li>`).join("")}
+                </ol>
+              </div>
+            </div>
+          `;
+
+          document.getElementById("notesExportActions").classList.remove("hidden");
+        } catch (error) {
+          alert(error.message || "Unable to generate notes.");
+        }
+      });
+
+      async function downloadExport(format) {
+        if (!generatedNotes) {
+          alert("Generate notes first.");
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/notes/export/${format}`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(generatedNotes)
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Export failed");
+          }
+
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${generatedNotes.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.${format === "docx" ? "docx" : "pdf"}`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        } catch (error) {
+          alert(error.message || "Unable to export file.");
+        }
+      }
+
+      document.getElementById("exportDocxBtn").addEventListener("click", () => downloadExport("docx"));
+      document.getElementById("exportPdfBtn").addEventListener("click", () => downloadExport("pdf"));
+
+      document.getElementById("chatForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const input = document.getElementById("chatInput");
+        const message = input.value.trim();
+
+        if (!message) return;
+
+        const chatMessages = document.getElementById("chatMessages");
+        appendChatBubble(chatMessages, "user", message);
+        input.value = "";
+
+        try {
+          const response = await studyHubAPI.sendChatMessage({ message, session_id: activeChatSessionId });
+          activeChatSessionId = response.session_id;
+
+          appendChatBubble(chatMessages, "bot", response.assistant_reply);
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+
+          await loadSessions();
+        } catch (error) {
+          appendChatBubble(chatMessages, "bot", error.message || "Something went wrong. Please try again.");
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+      });
+
+      document.getElementById("newChatBtn").addEventListener("click", () => {
+        activeChatSessionId = null;
+        document.getElementById("chatMessages").innerHTML = `
+          <div class="chat-bubble bot">Hello! Ask me about any concept, code issue, or chapter summary.</div>
+        `;
+      });
+
+      loadSessions();
+      renderNavbar("generate");
+    </script>
+  </body>
+</html>
